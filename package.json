@@ -1,0 +1,35 @@
+{
+  "name": "screeps-ai",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "webpack",
+    "prettier": "prettier --write src/**/*.ts",
+    "tslint": "tslint --fix src/**/*.ts",
+    "deploy": "source .env && npm run build && grunt screeps",
+    "precommit": "npm run prettier && npm run tslint",
+    "prepush": "npm run deploy"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.108",
+    "@types/screeps": "^2.3.0",
+    "grunt": "^1.0.0",
+    "grunt-screeps": "^1.0.0",
+    "husky": "^0.14.3",
+    "lodash": "^4.0.0",
+    "prettier": "^1.0.0",
+    "ts-loader": "^4.0.0",
+    "tslint": "^5.0.0",
+    "tslint-config-prettier": "^1.0.0",
+    "typescript": "^2.0.0",
+    "webpack": "^4.0.0",
+    "webpack-cli": "^2.1.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/armsnyder/screeps-ai.git"
+  },
+  "author": "Adam Snyder",
+  "license": "ISC"
+}
