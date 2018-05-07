@@ -1,4 +1,4 @@
-function hsvToRgb(h, s, v) {
+function hsvToRgb(h: number, s: number, v: number) {
   let r;
   let g;
   let b;
@@ -28,14 +28,16 @@ function hsvToRgb(h, s, v) {
     case 5:
       (r = v), (g = p), (b = q);
       break;
+    default:
+      throw Error();
   }
 
-  const decToByte = dec => Math.round(dec * 255);
+  const decToByte = (dec: number) => Math.round(dec * 255);
 
   return [decToByte(r), decToByte(g), decToByte(b)];
 }
 
-function hueToWebColor(hue) {
+function hueToWebColor(hue: number) {
   const rgb = hsvToRgb(hue, 1, 1);
   return "#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("");
 }

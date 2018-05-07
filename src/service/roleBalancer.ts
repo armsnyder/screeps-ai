@@ -26,25 +26,6 @@ function getSupplierPressure() {
   return 0.25 + 0.75 * factor;
 }
 
-function getHarvesterPressure() {
-  const containers = Game.spawns.Spawn1.room.find(FIND_STRUCTURES, {
-    filter: s =>
-      s.structureType === STRUCTURE_CONTAINER ||
-      s.structureType === STRUCTURE_STORAGE
-  }) as Array<StructureContainer | StructureStorage>;
-  if (!containers.length) {
-    return 0;
-  }
-  const maxCapacity = _.sum(containers.map(c => c.storeCapacity));
-  const filled = _.sum(containers.map(c => c.store[RESOURCE_ENERGY]));
-  const containerFactor = 1.0 * (1 - filled / maxCapacity);
-  const sources = Game.spawns.Spawn1.room.find(FIND_SOURCES);
-  const maxSourceEnergy = _.sum(sources.map(s => s.energyCapacity));
-  const availableSourceEnergy = _.sum(sources.map(s => s.energy));
-  const sourceFactor = (1 + 1.0 * availableSourceEnergy / maxSourceEnergy) / 2;
-  return containerFactor * sourceFactor;
-}
-
 function getRepairerPressure() {
   const allStructures = Game.spawns.Spawn1.room.find(FIND_STRUCTURES, {
     filter: structure => structure.structureType !== STRUCTURE_WALL
@@ -58,7 +39,7 @@ function getUpgraderPressure() {
   return 0.5;
 }
 
-function getPressure(role) {
+function getPressure(role: string) {
   switch (role) {
     case "builder":
       return getBuilderPressure();
@@ -68,19 +49,17 @@ function getPressure(role) {
       return getRepairerPressure();
     case "upgrader":
       return getUpgraderPressure();
-    case "harvester":
-      return getHarvesterPressure();
     default:
       return 0.5;
   }
 }
 
-function countCreepsOfRole(role) {
+function countCreepsOfRole(role: string) {
   return _.filter(Game.creeps, { memory: { role } }).length;
 }
 
-function getBalanceAnalysis() {
-  const roles = {};
+function getBalanceAnalysis(): BalanceAnalysis {
+  const roles = {} as { [role: string]: { pressure: number } };
   let totalPressure = 0;
   allRoles.forEach(role => {
     const pressure = getPressure(role) * Memory.roleBalancer.weights[role];
@@ -89,9 +68,9 @@ function getBalanceAnalysis() {
   });
   const creepsCount = _.size(Game.creeps);
   let mostNeededCreeps = 1;
-  let neededRoles = [];
+  let neededRoles = [] as string[];
   let mostOverLimitCreeps = 1;
-  let overLimitRoles = [];
+  let overLimitRoles = [] as string[];
   _.keys(roles).forEach(role => {
     const creepsOfRole = _.filter(Game.creeps, { memory: { role } }).length;
     const desiredCreepsOfRole =
@@ -119,7 +98,12 @@ function getBalanceAnalysis() {
   return { neededRoles, overLimitRoles };
 }
 
-function findLeastUnNeededRole(balanceAnalysis) {
+interface BalanceAnalysis {
+  neededRoles: string[];
+  overLimitRoles: string[];
+}
+
+function findLeastUnNeededRole(balanceAnalysis: BalanceAnalysis) {
   if (balanceAnalysis.neededRoles.length) {
     return _.sample(balanceAnalysis.neededRoles);
   } else if (balanceAnalysis.overLimitRoles.length) {
@@ -130,7 +114,7 @@ function findLeastUnNeededRole(balanceAnalysis) {
   }
 }
 
-function findLeastNeededRole(balanceAnalysis) {
+function findLeastNeededRole(balanceAnalysis: BalanceAnalysis) {
   if (balanceAnalysis.overLimitRoles.length) {
     return _.sample(balanceAnalysis.overLimitRoles);
   } else if (balanceAnalysis.neededRoles.length) {
@@ -141,7 +125,7 @@ function findLeastNeededRole(balanceAnalysis) {
   }
 }
 
-function findRoleFor(creep) {
+function findRoleFor(creep: Creep) {
   const balanceAnalysis = getBalanceAnalysis();
   const role = findLeastUnNeededRole(balanceAnalysis) || defaultRole;
   creep.memory.role = role;
@@ -189,7 +173,7 @@ export default function run() {
   initializeMemory();
   const unassignedCreep = _.find(
     _.values(Game.creeps),
-    creep => !creep.memory.role
+    creep => !creep.memory.role && !creep.memory.nonBalanced
   );
   if (unassignedCreep) {
     findRoleFor(unassignedCreep);

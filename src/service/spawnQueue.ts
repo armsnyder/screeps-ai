@@ -31,28 +31,13 @@ export default function run() {
   // doNextSpawn();
   // maintainCreepCount(10);
   const creepCount = _.size(Game.creeps);
-  if (creepCount < 12) {
+  if (creepCount < 6) {
     const body =
-      creepCount < 3
+      creepCount < 2
         ? [WORK, CARRY, MOVE]
-        : creepCount < 6
+        : creepCount < 4
           ? [WORK, WORK, CARRY, CARRY, MOVE, MOVE]
-          : creepCount < 9
-            ? [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
-            : [
-                WORK,
-                WORK,
-                WORK,
-                WORK,
-                CARRY,
-                CARRY,
-                CARRY,
-                CARRY,
-                MOVE,
-                MOVE,
-                MOVE,
-                MOVE
-              ];
+          : [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
     Game.spawns.Spawn1.spawnCreep(body, `Creep${Game.time}`);
   }
 }

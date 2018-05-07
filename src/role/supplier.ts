@@ -1,24 +1,17 @@
 import { getMoveOpts } from "../service/creepColorizer";
 import { moveToAndGetEnergyFromNearestContainer } from "../util/sources";
 
-declare global {
-  interface CreepMemory {
-    transferring: boolean;
-  }
-}
-
 export default function run(creep: Creep) {
   creep.say("⛽");
-  if (creep.memory.transferring && creep.carry.energy === 0) {
-    creep.memory.transferring = false;
+  if (!creep.memory.reloading && creep.carry.energy === 0) {
+    creep.memory.reloading = true;
   }
-  if (
-    !creep.memory.transferring &&
-    creep.carry.energy === creep.carryCapacity
-  ) {
-    creep.memory.transferring = true;
+  if (creep.memory.reloading && creep.carry.energy === creep.carryCapacity) {
+    creep.memory.reloading = false;
   }
-  if (creep.memory.transferring) {
+  if (creep.memory.reloading) {
+    moveToAndGetEnergyFromNearestContainer(creep);
+  } else {
     const target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
       filter: structure =>
         (structure.structureType === STRUCTURE_EXTENSION ||
@@ -32,7 +25,5 @@ export default function run(creep: Creep) {
         creep.moveTo(target, getMoveOpts(creep));
       }
     }
-  } else {
-    moveToAndGetEnergyFromNearestContainer(creep);
   }
 }

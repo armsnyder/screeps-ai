@@ -1,10 +1,10 @@
-function getShouldPlaceRoad(creep) {
+function getShouldPlaceRoad(creep: Creep) {
   if (creep.fatigue === 0) {
     return false;
   }
   const roads = creep.pos
     .lookFor(LOOK_STRUCTURES)
-    .filter(structure => structure.structureType === STRUCTURE_ROAD);
+    .filter((s: Structure) => s.structureType === STRUCTURE_ROAD);
   if (roads.length) {
     return false;
   }
