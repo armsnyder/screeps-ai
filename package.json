@@ -12,7 +12,7 @@
     "prepush": "npm run deploy"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.108",
+    "@types/lodash": "3.10.1",
     "@types/screeps": "^2.3.0",
     "grunt": "^1.0.0",
     "grunt-screeps": "^1.0.0",

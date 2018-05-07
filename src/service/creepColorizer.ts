@@ -58,7 +58,7 @@ export default function run() {
     Memory.creepColorizer.creeps = {};
     let i = 0;
     const hueStep = 1.0 / creepCount;
-    _.values(Game.creeps).forEach(creep => {
+    (_.values(Game.creeps) as Creep[]).forEach(creep => {
       Memory.creepColorizer.creeps[creep.id] = hueToWebColor(hueStep * i);
       i++;
     });

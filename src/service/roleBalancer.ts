@@ -172,7 +172,7 @@ function initializeMemory() {
 export default function run() {
   initializeMemory();
   const unassignedCreep = _.find(
-    _.values(Game.creeps),
+    _.values(Game.creeps) as Creep[],
     creep => !creep.memory.role && !creep.memory.nonBalanced
   );
   if (unassignedCreep) {

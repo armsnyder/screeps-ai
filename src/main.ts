@@ -16,8 +16,8 @@ function cleanMemory() {
 
 export function loop() {
   cleanMemory();
-  serviceHarvesters();
   serviceMovers();
+  serviceHarvesters();
   serviceCreepRunner();
   serviceSpawnQueue();
   serviceCreepColorizer();

@@ -16,7 +16,7 @@ function getShouldPlaceRoad(creep: Creep) {
 }
 
 export default function run() {
-  _.values(Game.creeps).forEach(creep => {
+  (_.values(Game.creeps) as Creep[]).forEach(creep => {
     if (getShouldPlaceRoad(creep)) {
       creep.room.createConstructionSite(creep.pos, STRUCTURE_ROAD);
     }

@@ -17,5 +17,5 @@ function runCreep(creep: Creep) {
 }
 
 export default function run() {
-  _.values(Game.creeps).forEach(runCreep);
+  (_.values(Game.creeps) as Creep[]).forEach(runCreep);
 }

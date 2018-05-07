@@ -12,32 +12,38 @@ function deepConcatCustomizer(objValue: any, srcValue: any) {
 }
 
 function cleanUpDeadCreeps(spawn: StructureSpawn) {
-  _.entries(Memory.moversByHarvester).forEach(([harvester, mover]) => {
+  _.keys(Memory.moversByHarvester).forEach(harvester => {
+    const mover = _.get(Memory, `moversByHarvester[${harvester}]`) as string;
     if (
+      Memory.moversByHarvester &&
       !Game.creeps[mover] &&
       !(spawn.spawning && spawn.spawning.name === mover)
     ) {
-      _.unset(Memory, `moversByHarvester[${harvester}]`);
+      delete Memory.moversByHarvester[harvester];
     }
   });
 }
 
 function discoverOrphans() {
-  _.entries(Memory.moversByHarvester).forEach(([harvester, mover]) => {
-    if (!Game.creeps[harvester]) {
-      _.unset(Memory, `moversByHarvester[${harvester}]`);
-      _.mergeWith(Memory, { orphanedMovers: [mover] }, deepConcatCustomizer);
+  _.keys(Memory.moversByHarvester).forEach(harvester => {
+    if (Memory.moversByHarvester && !Game.creeps[harvester]) {
+      const mover = Memory.moversByHarvester[harvester];
+      if (!Memory.orphanedMovers) {
+        Memory.orphanedMovers = [];
+      }
+      Memory.orphanedMovers.push(mover);
+      delete Memory.moversByHarvester[harvester];
     }
   });
 }
 
 function spawnOrLinkIfNeeded(spawn: StructureSpawn) {
   _.values(_.get(Memory, "harvestersBySource", {})).forEach(harvester => {
-    if (!_.get(Memory, `moversByHarvester[${harvester}`)) {
+    if (!_.get(Memory, `moversByHarvester[${harvester}]`)) {
       const orphanedMovers = Memory.orphanedMovers;
       if (orphanedMovers && orphanedMovers.length) {
         const name = orphanedMovers.shift();
-        _.set(Memory, `moversByHarvester[${harvester}`, name);
+        _.set(Memory, `moversByHarvester[${harvester}]`, name);
       } else if (!spawn.spawning) {
         const name = `Mover${Game.time}`;
         const spawnRC = spawn.spawnCreep(
@@ -48,7 +54,7 @@ function spawnOrLinkIfNeeded(spawn: StructureSpawn) {
           }
         );
         if (spawnRC === OK) {
-          _.set(Memory, `moversByHarvester[${harvester}`, name);
+          _.set(Memory, `moversByHarvester[${harvester}]`, name);
         }
       }
     }
@@ -56,10 +62,16 @@ function spawnOrLinkIfNeeded(spawn: StructureSpawn) {
 }
 
 function doMoving() {
-  _.entries(Memory.moversByHarvester).forEach(([harvesterName, moverName]) => {
-    const moverCreep = Game.creeps[moverName];
+  _.keys(Memory.moversByHarvester).forEach(harvesterName => {
+    if (!Memory.moversByHarvester) {
+      return;
+    }
+    const moverCreep = Game.creeps[Memory.moversByHarvester[harvesterName]];
     const harvesterCreep = Game.creeps[harvesterName];
     if (moverCreep && harvesterCreep) {
+      if (!moverCreep.memory.reloading && moverCreep.carry.energy === 0) {
+        moverCreep.memory.reloading = true;
+      }
       if (moverCreep.memory.reloading) {
         if (
           harvesterCreep.transfer(moverCreep, RESOURCE_ENERGY) ===
@@ -67,7 +79,7 @@ function doMoving() {
         ) {
           moverCreep.moveTo(harvesterCreep);
         } else {
-          harvesterCreep.memory.reloading = false;
+          moverCreep.memory.reloading = false;
         }
       } else {
         const target = moverCreep.pos.findClosestByPath(FIND_STRUCTURES, {

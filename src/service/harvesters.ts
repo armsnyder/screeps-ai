@@ -5,12 +5,14 @@ declare global {
 }
 
 function cleanUpDeadCreeps(spawn: StructureSpawn) {
-  _.entries(Memory.harvestersBySource).forEach(([sourceId, name]) => {
+  _.keys(Memory.harvestersBySource).forEach(sourceId => {
+    const name = _.get(Memory, `harvestersBySource[${sourceId}]`) as string;
     if (
+      Memory.harvestersBySource &&
       !Game.creeps[name] &&
       !(spawn.spawning && spawn.spawning.name === name)
     ) {
-      _.unset(Memory, `harvestersBySource[${sourceId}`);
+      delete Memory.harvestersBySource[sourceId];
     }
   });
 }
@@ -37,8 +39,9 @@ function spawnIfNeeded(spawn: StructureSpawn) {
 }
 
 function doHarvesting() {
-  _.entries(Memory.harvestersBySource).forEach(([sourceId, creepName]) => {
-    const creep = Game.creeps[creepName];
+  _.keys(Memory.harvestersBySource).forEach(sourceId => {
+    const creep =
+      Game.creeps[_.get(Memory, `harvestersBySource[${sourceId}]`) as string];
     if (creep) {
       const sourceObj = Game.getObjectById(sourceId) as Source;
       if (creep.harvest(sourceObj) === ERR_NOT_IN_RANGE) {
