@@ -42,7 +42,7 @@ function doHarvesting() {
   _.keys(Memory.harvestersBySource).forEach(sourceId => {
     const creep =
       Game.creeps[_.get(Memory, `harvestersBySource[${sourceId}]`) as string];
-    if (creep) {
+    if (creep && creep.carry.energy < creep.carryCapacity) {
       const sourceObj = Game.getObjectById(sourceId) as Source;
       if (creep.harvest(sourceObj) === ERR_NOT_IN_RANGE) {
         creep.moveTo(sourceObj);
