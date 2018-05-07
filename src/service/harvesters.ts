@@ -1,3 +1,5 @@
+import { getSpawn } from "../util/spawn";
+
 declare global {
   interface Memory {
     harvestersBySource?: { [sourceId: string]: string };
@@ -52,7 +54,10 @@ function doHarvesting() {
 }
 
 export default function() {
-  const spawn = Game.spawns.Spawn1;
+  const spawn = getSpawn();
+  if (!spawn) {
+    return;
+  }
   cleanUpDeadCreeps(spawn);
   spawnIfNeeded(spawn);
   doHarvesting();

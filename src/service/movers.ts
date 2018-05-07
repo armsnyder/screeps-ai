@@ -1,3 +1,5 @@
+import { getSpawn } from "../util/spawn";
+
 declare global {
   interface Memory {
     moversByHarvester?: { [harvesterName: string]: string };
@@ -115,7 +117,10 @@ function doMoving() {
 }
 
 export default function() {
-  const spawn = Game.spawns.Spawn1;
+  const spawn = getSpawn();
+  if (!spawn) {
+    return;
+  }
   cleanUpDeadCreeps(spawn);
   discoverOrphans();
   spawnOrLinkIfNeeded(spawn);

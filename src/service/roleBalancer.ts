@@ -1,4 +1,5 @@
 import { allRoles, defaultRole } from "../util/roles";
+import { getSpawn } from "../util/spawn";
 
 function getBuilderPressure() {
   const constructionSiteCount = _.size(Game.constructionSites);
@@ -11,11 +12,16 @@ function getBuilderPressure() {
 }
 
 function getSupplierPressure() {
-  const { room } = Game.spawns.Spawn1;
+  const spawn = getSpawn();
+  if (!spawn) {
+    return 0;
+  }
+  const { room } = spawn;
   if (
-    room.find(FIND_HOSTILE_CREEPS) &&
-    (Game.getObjectById("5aeb9ed3eaccbf11e1955a7c") as StructureTower).energy <
-      500
+    room.find(FIND_HOSTILE_CREEPS).length &&
+    room.find(FIND_STRUCTURES, {
+      filter: s => s.structureType === STRUCTURE_TOWER && s.energy < 500
+    }).length
   ) {
     return 0.5;
   }
@@ -27,7 +33,11 @@ function getSupplierPressure() {
 }
 
 function getRepairerPressure() {
-  const allStructures = Game.spawns.Spawn1.room.find(FIND_STRUCTURES, {
+  const spawn = getSpawn();
+  if (!spawn) {
+    return 0;
+  }
+  const allStructures = spawn.room.find(FIND_STRUCTURES, {
     filter: structure => structure.structureType !== STRUCTURE_WALL
   });
   const totalHitsMax = _.sum(allStructures.map(s => s.hitsMax));

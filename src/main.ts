@@ -5,6 +5,7 @@ import serviceMovers from "./service/movers";
 import serviceRoadSpawner from "./service/roadSpawner";
 import serviceRoleBalancer from "./service/roleBalancer";
 import serviceSpawnQueue from "./service/spawnQueue";
+import serviceTowers from "./service/towers";
 
 function cleanMemory() {
   for (const name in Memory.creeps) {
@@ -24,9 +25,5 @@ export function loop() {
   serviceCreepRunner();
   serviceRoleBalancer();
   serviceRoadSpawner();
-  const tower = Game.getObjectById(
-    "5aeb9ed3eaccbf11e1955a7c"
-  ) as StructureTower;
-  const target = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-  tower.attack(target);
+  serviceTowers();
 }

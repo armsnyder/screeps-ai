@@ -24,6 +24,8 @@
 //     }
 // }
 
+import { getSpawn } from "../util/spawn";
+
 export default function run() {
   // if (!Memory.spawnQueue) {
   //     Memory.spawnQueue = [];
@@ -38,6 +40,9 @@ export default function run() {
         : creepCount < 4
           ? [WORK, WORK, CARRY, CARRY, MOVE, MOVE]
           : [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
-    Game.spawns.Spawn1.spawnCreep(body, `Creep${Game.time}`);
+    const spawn = getSpawn();
+    if (spawn) {
+      spawn.spawnCreep(body, `Creep${Game.time}`);
+    }
   }
 }
