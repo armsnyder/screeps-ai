@@ -1,4 +1,5 @@
-import { getSpawn } from "../util/spawn";
+import { countCreepsAliveOrEnqueued, getSpawn } from "../util/spawn";
+import { enqueue } from "./spawnQueue";
 
 declare global {
   interface Memory {
@@ -16,19 +17,23 @@ function deepConcatCustomizer(objValue: any, srcValue: any) {
 function cleanUpDeadCreeps(spawn: StructureSpawn) {
   _.keys(Memory.moversByHarvester).forEach(harvester => {
     const mover = _.get(Memory, `moversByHarvester[${harvester}]`) as string;
-    if (
-      Memory.moversByHarvester &&
-      !Game.creeps[mover] &&
-      !(spawn.spawning && spawn.spawning.name === mover)
-    ) {
-      delete Memory.moversByHarvester[harvester];
+    if (Memory.moversByHarvester) {
+      const moverCount = countCreepsAliveOrEnqueued({
+        nameFilter: n => n === mover
+      });
+      if (!moverCount) {
+        delete Memory.moversByHarvester[harvester];
+      }
     }
   });
 }
 
 function discoverOrphans() {
   _.keys(Memory.moversByHarvester).forEach(harvester => {
-    if (Memory.moversByHarvester && !Game.creeps[harvester]) {
+    const harvesterCount = countCreepsAliveOrEnqueued({
+      nameFilter: n => n === harvester
+    });
+    if (Memory.moversByHarvester && !harvesterCount) {
       const mover = Memory.moversByHarvester[harvester];
       if (!Memory.orphanedMovers) {
         Memory.orphanedMovers = [];
@@ -46,18 +51,14 @@ function spawnOrLinkIfNeeded(spawn: StructureSpawn) {
       if (orphanedMovers && orphanedMovers.length) {
         const name = orphanedMovers.shift();
         _.set(Memory, `moversByHarvester[${harvester}]`, name);
-      } else if (!spawn.spawning) {
+      } else {
         const name = `Mover${Game.time}`;
-        const spawnRC = spawn.spawnCreep(
-          [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE],
-          name,
-          {
-            memory: { nonBalanced: true }
-          }
-        );
-        if (spawnRC === OK) {
-          _.set(Memory, `moversByHarvester[${harvester}]`, name);
-        }
+        enqueue({
+          body: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE],
+          memory: { nonBalanced: true },
+          name
+        });
+        _.set(Memory, `moversByHarvester[${harvester}]`, name);
       }
     }
   });

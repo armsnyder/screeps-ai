@@ -7,18 +7,26 @@
     "build": "webpack",
     "prettier": "prettier --write src/**/*.ts",
     "tslint": "tslint --fix src/**/*.ts",
-    "deploy": "source .env && npm run build && grunt screeps",
+    "deploy": "source .env && grunt screeps",
     "precommit": "npm run prettier && npm run tslint",
-    "prepush": "npm run deploy"
+    "test": "jest src",
+    "integration_test": "jest integration_test"
   },
   "devDependencies": {
+    "@types/fs-extra-promise": "^1.0.5",
+    "@types/jest": "^22.2.3",
     "@types/lodash": "3.10.1",
+    "@types/node": "^10.0.4",
     "@types/screeps": "^2.3.0",
+    "fs-extra-promise": "^1.0.1",
     "grunt": "^1.0.0",
     "grunt-screeps": "^1.0.0",
     "husky": "^0.14.3",
+    "jest": "^22.4.3",
     "lodash": "^4.0.0",
     "prettier": "^1.0.0",
+    "screeps-server-mockup": "^1.1.0",
+    "ts-jest": "^22.4.5",
     "ts-loader": "^4.0.0",
     "tslint": "^5.0.0",
     "tslint-config-prettier": "^1.0.0",
@@ -31,5 +39,17 @@
     "url": "git+https://github.com/armsnyder/screeps-ai.git"
   },
   "author": "Adam Snyder",
-  "license": "ISC"
+  "license": "ISC",
+  "jest": {
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(js|ts)$",
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json",
+      "node"
+    ]
+  }
 }

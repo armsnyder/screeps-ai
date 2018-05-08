@@ -1,5 +1,6 @@
 import serviceCreepColorizer from "./service/creepColorizer";
 import serviceCreepRunner from "./service/creepRunner";
+import serviceGenericWorkerSpawner from "./service/genericWorkerSpawner";
 import serviceHarvesters from "./service/harvesters";
 import serviceMovers from "./service/movers";
 import serviceRoadSpawner from "./service/roadSpawner";
@@ -17,8 +18,8 @@ function cleanMemory() {
 
 export function loop() {
   cleanMemory();
-  serviceMovers();
   serviceHarvesters();
+  serviceMovers();
   serviceCreepRunner();
   serviceSpawnQueue();
   serviceCreepColorizer();
@@ -26,4 +27,5 @@ export function loop() {
   serviceRoleBalancer();
   serviceRoadSpawner();
   serviceTowers();
+  serviceGenericWorkerSpawner();
 }

@@ -22,5 +22,17 @@ export function moveToAndGetEnergyFromNearestContainer(creep: Creep) {
     if (creep.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       creep.moveTo(target, getMoveOpts(creep));
     }
+  } else {
+    const target2 = creep.pos.findClosestByPath(FIND_STRUCTURES, {
+      filter: s =>
+        (s.structureType === STRUCTURE_SPAWN ||
+          s.structureType === STRUCTURE_EXTENSION) &&
+        s.energy > 0
+    });
+    if (target2) {
+      if (creep.withdraw(target2, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        creep.moveTo(target2, getMoveOpts(creep));
+      }
+    }
   }
 }

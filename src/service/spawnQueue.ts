@@ -1,48 +1,60 @@
-// function countCreepsInGameOrQueue(filter) {
-//     return _.size(Game.creeps) + _.size(Memory.spawnQueue);
-// }
-
-// function maintainCreepCount(desiredCount) {
-//     var count = countCreepsInGameOrQueue();
-//     if (count < desiredCount) {
-//         Memory.spawnQueue.push(
-//             [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE],
-//         );
-//     }
-// }
-
-// function doNextSpawn() {
-//     const spawner = Game.spawns['Spawn1'];
-//     if (Memory.spawnQueue.length && !spawner.spawning) {
-//         const rc = spawner.spawnCreep(
-//             Memory.spawnQueue[0],
-//             `Creep${Game.time}`,
-//         );
-//         if (rc === OK) {
-//             Memory.spawnQueue.shift();
-//         }
-//     }
-// }
-
 import { getSpawn } from "../util/spawn";
 
-export default function run() {
-  // if (!Memory.spawnQueue) {
-  //     Memory.spawnQueue = [];
-  // }
-  // doNextSpawn();
-  // maintainCreepCount(10);
-  const creepCount = _.size(Game.creeps);
-  if (creepCount < 6) {
-    const body =
-      creepCount < 2
-        ? [WORK, CARRY, MOVE]
-        : creepCount < 4
-          ? [WORK, WORK, CARRY, CARRY, MOVE, MOVE]
-          : [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
-    const spawn = getSpawn();
-    if (spawn) {
-      spawn.spawnCreep(body, `Creep${Game.time}`);
+export interface EnqueuedSpawn {
+  name: string;
+  body: BodyPartConstant[];
+  memory?: CreepMemory;
+}
+
+declare global {
+  interface Memory {
+    spawnQueue?: EnqueuedSpawn[];
+    spawning?: EnqueuedSpawn;
+  }
+}
+
+export function enqueue(spawnDefinition: EnqueuedSpawn) {
+  if (!Memory.spawnQueue) {
+    Memory.spawnQueue = [];
+  }
+  Memory.spawnQueue.push(spawnDefinition);
+}
+
+export function getSpawnQueue(): EnqueuedSpawn[] {
+  return _.get(Memory, "spawnQueue", []);
+}
+
+export function getSpawning(): EnqueuedSpawn | undefined {
+  return Memory.spawning;
+}
+
+function doNextSpawn() {
+  const spawn = getSpawn();
+  const queue = Memory.spawnQueue;
+  if (queue && queue.length && spawn && !spawn.spawning) {
+    let rc = spawn.spawnCreep(queue[0].body, queue[0].name, {
+      memory: queue[0].memory
+    });
+    if (rc === ERR_NOT_ENOUGH_ENERGY) {
+      const simplifiedBody = _.uniq(queue[0].body);
+      rc = spawn.spawnCreep(simplifiedBody, queue[0].name, {
+        memory: queue[0].memory
+      });
+    }
+    if (rc === OK) {
+      Memory.spawning = queue.shift();
     }
   }
+}
+
+function cleanUpSpawning() {
+  const spawn = getSpawn();
+  if (spawn && !spawn.spawning && Memory.spawning) {
+    delete Memory.spawning;
+  }
+}
+
+export default function() {
+  cleanUpSpawning();
+  doNextSpawn();
 }
