@@ -1,14 +1,20 @@
 import { readFileSync } from "fs";
 import { removeAsync } from "fs-extra-promise";
-import { filter, find, isFunction, keys, size } from "lodash";
+import { filter, find, get, isFunction, keys, size } from "lodash";
 import { resolve } from "path";
-import { ScreepsServer, TerrainMatrix } from "screeps-server-mockup";
+import {
+  DBRoomObject,
+  ScreepsServer,
+  ScreepsUser,
+  ScreepsWorld
+} from "screeps-server-mockup";
 
 describe("integration tests", () => {
-  let server: typeof ScreepsServer;
-  let user: any;
-  let db: any;
-  let world: any;
+  let server: ScreepsServer;
+  let user: ScreepsUser;
+  let roomObjectsLastTick: DBRoomObject[];
+  let roomObjects: DBRoomObject[];
+  let world: ScreepsWorld;
   const room = "W0N1";
 
   async function commonRoomInitialization() {
@@ -37,64 +43,83 @@ describe("integration tests", () => {
     });
   }
 
-  async function getRoomObjects() {
-    return world.roomObjects(room);
+  function getSpawnEnergy(objects: DBRoomObject[] = roomObjects) {
+    return get(find(objects, { type: "spawn" }), "energy");
   }
 
-  async function getSpawnEnergy() {
-    return (find(await getRoomObjects(), { type: "spawn" }) as any).energy;
+  function getSourceEnergy(objects: DBRoomObject[] = roomObjects) {
+    return get(find(objects, { type: "source" }), "energy");
   }
 
-  async function getSourceEnergy() {
-    return (find(await getRoomObjects(), { type: "source" }) as any).energy;
+  function getCreepEnergy(name: string, objects: DBRoomObject[] = roomObjects) {
+    return get(find(objects, { type: "creep", name }), "energy");
   }
 
-  async function getCreepEnergy(name: string) {
-    return (find(await getRoomObjects(), { type: "creep", name }) as any)
-      .energy;
+  function countSpawnedCreeps(objects: DBRoomObject[] = roomObjects) {
+    return size(filter(objects, { type: "creep" }));
   }
 
-  async function countSpawnedCreeps() {
-    return size(filter(await getRoomObjects(), { type: "creep" }));
+  function getControllerLevel(objects: DBRoomObject[] = roomObjects) {
+    return get(find(objects, { type: "controller", name }), "level");
   }
 
-  async function getIsCreepNextToSource(name: string) {
-    const roomObjects = await getRoomObjects();
-    const creep = find(roomObjects, { type: "creep", name }) as any;
+  function getIsCreepNextToSource(
+    name: string,
+    objects: DBRoomObject[] = roomObjects
+  ) {
+    const creep = find(objects, { type: "creep", name });
     if (!creep) {
-      return null;
+      throw Error("No creep found");
     }
-    const source = find(roomObjects, { type: "source" }) as any;
+    const source = find(objects, { type: "source" });
+    if (!source) {
+      throw Error("No source found");
+    }
     return (
       Math.abs(creep.x - source.x) <= 1 && Math.abs(creep.y - source.y) <= 1
     );
   }
 
-  async function getIsCreepNextToSpawn(name: string) {
-    const roomObjects = await getRoomObjects();
-    const creep = find(roomObjects, { type: "creep", name }) as any;
+  function getIsCreepNextToSpawn(
+    name: string,
+    objects: DBRoomObject[] = roomObjects
+  ) {
+    const creep = find(objects, { type: "creep", name });
     if (!creep) {
-      return null;
+      throw Error("No creep found");
     }
-    const spawn = find(roomObjects, { type: "spawn" }) as any;
+    const spawn = find(objects, { type: "spawn" });
+    if (!spawn) {
+      throw Error("No spawn found");
+    }
     return Math.abs(creep.x - spawn.x) <= 1 && Math.abs(creep.y - spawn.y) <= 1;
+  }
+
+  async function tick() {
+    await server.tick();
+    roomObjectsLastTick = roomObjects;
+    roomObjects = await world.roomObjects(room);
+  }
+
+  function getDelta(operator: (roomObjects: DBRoomObject[]) => any): any[] {
+    return [operator(roomObjectsLastTick), operator(roomObjects)];
   }
 
   beforeEach(async () => {
     server = new ScreepsServer();
     await server.world.reset();
     ({ world } = server);
-    ({ db } = await world.load());
     await commonRoomInitialization();
     user = await addUser();
     await server.start();
+    roomObjects = await world.roomObjects(room);
+    roomObjectsLastTick = roomObjects;
   });
 
   afterEach(async () => {
     if (isFunction(server.stop)) {
       await server.stop();
     }
-    server = null;
     await removeAsync(resolve("server")).catch(console.error);
   });
 
@@ -109,29 +134,27 @@ describe("integration tests", () => {
   });
 
   it("should spawn a harvester first", async () => {
-    let firstCreepName;
-    let sourceEnergyLastTick = await getSourceEnergy();
-    let creepEnergyLastTick;
-    let energyWasHarvested;
+    let firstCreepName: string | undefined;
+    const getFirstCreepEnergy = (objects: DBRoomObject[]) =>
+      getCreepEnergy(firstCreepName || "", objects);
+    let energyWasHarvested = false;
     const ticksTimeout = 15;
     for (let i = 0; i < ticksTimeout; i++) {
-      await server.tick();
-      const roomObjects = await getRoomObjects();
+      await tick();
       if (!firstCreepName) {
         const creep = find(roomObjects, { type: "creep" }) as any;
         if (creep) {
           firstCreepName = creep.name;
-          creepEnergyLastTick = await getCreepEnergy(firstCreepName);
         }
       } else {
-        const sourceEnergyThisTick = await getSourceEnergy();
-        const creepEnergyThisTick = await getCreepEnergy(firstCreepName);
-        const creepIsNextToSource = await getIsCreepNextToSource(
-          firstCreepName
+        const creepEnergy = getDelta(getFirstCreepEnergy);
+        const sourceEnergy = getDelta(getSourceEnergy);
+        const creepIsNextToSource = getIsCreepNextToSource(
+          firstCreepName,
+          roomObjects
         );
-        const creepEnergyIncreased = creepEnergyThisTick > creepEnergyLastTick;
-        const sourceEnergyDecreased =
-          sourceEnergyThisTick < sourceEnergyLastTick;
+        const creepEnergyIncreased = creepEnergy[1] > creepEnergy[0];
+        const sourceEnergyDecreased = sourceEnergy[1] < sourceEnergy[0];
         if (
           creepIsNextToSource &&
           creepEnergyIncreased &&
@@ -140,57 +163,63 @@ describe("integration tests", () => {
           energyWasHarvested = true;
           break;
         }
-        sourceEnergyLastTick = sourceEnergyThisTick;
-        creepEnergyLastTick = creepEnergyThisTick;
       }
     }
     expect(energyWasHarvested).toBe(true);
   });
 
   it("should deposit energy to spawn", async () => {
-    let spawnEnergyLastTick = await getSpawnEnergy();
     let energyWasDeposited = false;
     const ticksTimeout = 20;
     for (let i = 0; i < ticksTimeout; i++) {
-      await server.tick();
-      const spawnEnergyThisTick = await getSpawnEnergy();
-      if (spawnEnergyThisTick - spawnEnergyLastTick > 1) {
+      await tick();
+      const spawnEnergy = getDelta(getSpawnEnergy);
+      if (spawnEnergy[1] - spawnEnergy[0] > 1) {
         energyWasDeposited = true;
         break;
       }
-      spawnEnergyLastTick = spawnEnergyThisTick;
     }
     expect(energyWasDeposited).toBe(true);
   });
 
   it("should separate harvester and depositor", async () => {
-    let spawnEnergyLastTick = await getSpawnEnergy();
     let energyWasDepositedByNonHarvester = false;
     const ticksTimeout = 20;
     for (let i = 0; i < ticksTimeout; i++) {
-      await server.tick();
-      const spawnEnergyThisTick = await getSpawnEnergy();
-      if (spawnEnergyThisTick - spawnEnergyLastTick > 1) {
-        const creeps = filter(await getRoomObjects(), {
+      await tick();
+      const spawnEnergy = getDelta(getSpawnEnergy);
+      if (spawnEnergy[1] - spawnEnergy[0] > 1) {
+        const creeps = filter(roomObjects, {
           type: "creep"
         }) as any[];
         if (creeps.length >= 2) {
           const creepA = creeps[0].name;
           const creepB = creeps[1].name;
           const successCase1 =
-            (await getIsCreepNextToSource(creepA)) &&
-            (await getIsCreepNextToSpawn(creepB));
+            getIsCreepNextToSource(creepA) && getIsCreepNextToSpawn(creepB);
           const successCase2 =
-            (await getIsCreepNextToSource(creepB)) &&
-            (await getIsCreepNextToSpawn(creepA));
+            getIsCreepNextToSource(creepB) && getIsCreepNextToSpawn(creepA);
           if (successCase1 || successCase2) {
             energyWasDepositedByNonHarvester = true;
             break;
           }
         }
       }
-      spawnEnergyLastTick = spawnEnergyThisTick;
     }
     expect(energyWasDepositedByNonHarvester).toBe(true);
+  });
+
+  it("should upgrade controller", async () => {
+    let controllerWasUpgraded = false;
+    const ticksTimeout = 500;
+    for (let i = 0; i < ticksTimeout; i++) {
+      await tick();
+      const controllerLevel = getControllerLevel();
+      if (controllerLevel > 1) {
+        controllerWasUpgraded = true;
+        break;
+      }
+    }
+    expect(controllerWasUpgraded).toBe(true);
   });
 });

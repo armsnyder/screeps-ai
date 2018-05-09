@@ -4,3 +4,4 @@ node_modules
 .env
 screeps-ai.iml
 dist
+server
