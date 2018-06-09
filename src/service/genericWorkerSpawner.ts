@@ -1,17 +1,19 @@
-import { countCreepsAliveOrEnqueued, getSpawn } from "../util/spawn";
-import { enqueue } from "./spawnQueue";
+import { countCreeps, getSpawn } from "../util/spawn";
+import { trySpawnThisTick } from "./spawnQueue";
 
 export default function run() {
-  const creepCount = countCreepsAliveOrEnqueued({
-    memoryFilter: m => !m || !m.nonBalanced
+  const creepCount = countCreeps({
+    memoryFilter: m => m && m.generic
   });
   if (creepCount < 6) {
     const body =
-      creepCount < 2
-        ? [WORK, CARRY, MOVE]
-        : creepCount < 4
-          ? [WORK, WORK, CARRY, CARRY, MOVE, MOVE]
-          : [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
-    enqueue({ body, name: `Creep${Game.time}` });
+      creepCount < 4
+        ? [WORK, WORK, CARRY, CARRY, MOVE, MOVE]
+        : [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
+    trySpawnThisTick({
+      body,
+      memory: { generic: true },
+      name: `Creep${Game.time}`
+    });
   }
 }

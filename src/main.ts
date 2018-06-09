@@ -1,11 +1,11 @@
 import serviceCreepColorizer from "./service/creepColorizer";
 import serviceCreepRunner from "./service/creepRunner";
+import serviceRoleBalancer from "./service/genericWorkerBalancer";
 import serviceGenericWorkerSpawner from "./service/genericWorkerSpawner";
 import serviceHarvesters from "./service/harvesters";
 import serviceMovers from "./service/movers";
 import serviceRoadSpawner from "./service/roadSpawner";
-import serviceRoleBalancer from "./service/roleBalancer";
-import serviceSpawnQueue from "./service/spawnQueue";
+import * as serviceSpawnQueue from "./service/spawnQueue";
 import serviceTowers from "./service/towers";
 
 function cleanMemory() {
@@ -17,15 +17,20 @@ function cleanMemory() {
 }
 
 export function loop() {
+  Game.cache = {};
+  serviceSpawnQueue.init();
   cleanMemory();
+
   serviceHarvesters();
   serviceMovers();
+  serviceGenericWorkerSpawner();
+
   serviceCreepRunner();
-  serviceSpawnQueue();
   serviceCreepColorizer();
   serviceCreepRunner();
   serviceRoleBalancer();
   serviceRoadSpawner();
   serviceTowers();
-  serviceGenericWorkerSpawner();
+
+  serviceSpawnQueue.doNextSpawn();
 }

@@ -1,60 +1,53 @@
 import { getSpawn } from "../util/spawn";
 
-export interface EnqueuedSpawn {
+interface EnqueuedSpawn {
   name: string;
   body: BodyPartConstant[];
   memory?: CreepMemory;
 }
 
-declare global {
-  interface Memory {
-    spawnQueue?: EnqueuedSpawn[];
-    spawning?: EnqueuedSpawn;
+export function trySpawnThisTick(spawnDefinition: EnqueuedSpawn) {
+  Game.cache.spawnQueue.requests.push(spawnDefinition);
+}
+
+export function init() {
+  Game.cache.spawnQueue = {
+    requests: []
+  };
+}
+
+function chooseCreepToSpawn(): EnqueuedSpawn | undefined {
+  let candidate: EnqueuedSpawn | undefined;
+  const { requests } = Game.cache.spawnQueue as {
+    requests: EnqueuedSpawn[];
+  };
+  if (!_.size(Game.creeps)) {
+    candidate = _.find(requests, { memory: { role: "harvester" } });
   }
-}
-
-export function enqueue(spawnDefinition: EnqueuedSpawn) {
-  if (!Memory.spawnQueue) {
-    Memory.spawnQueue = [];
+  if (candidate) {
+    return candidate;
   }
-  Memory.spawnQueue.push(spawnDefinition);
+  candidate = _.find(requests, { memory: { role: "mover" } });
+  if (candidate) {
+    return candidate;
+  }
+  return _.sample(requests);
 }
 
-export function getSpawnQueue(): EnqueuedSpawn[] {
-  return _.get(Memory, "spawnQueue", []);
-}
-
-export function getSpawning(): EnqueuedSpawn | undefined {
-  return Memory.spawning;
-}
-
-function doNextSpawn() {
+export function doNextSpawn() {
   const spawn = getSpawn();
-  const queue = Memory.spawnQueue;
-  if (queue && queue.length && spawn && !spawn.spawning) {
-    let rc = spawn.spawnCreep(queue[0].body, queue[0].name, {
-      memory: queue[0].memory
-    });
-    if (rc === ERR_NOT_ENOUGH_ENERGY) {
-      const simplifiedBody = _.uniq(queue[0].body);
-      rc = spawn.spawnCreep(simplifiedBody, queue[0].name, {
-        memory: queue[0].memory
+  if (spawn && !spawn.spawning) {
+    const creepToSpawn = chooseCreepToSpawn();
+    if (creepToSpawn) {
+      let rc = spawn.spawnCreep(creepToSpawn.body, creepToSpawn.name, {
+        memory: creepToSpawn.memory
       });
-    }
-    if (rc === OK) {
-      Memory.spawning = queue.shift();
+      if (rc === ERR_NOT_ENOUGH_ENERGY) {
+        const simplifiedBody = _.uniq(creepToSpawn.body);
+        rc = spawn.spawnCreep(simplifiedBody, creepToSpawn.name, {
+          memory: creepToSpawn.memory
+        });
+      }
     }
   }
-}
-
-function cleanUpSpawning() {
-  const spawn = getSpawn();
-  if (spawn && !spawn.spawning && Memory.spawning) {
-    delete Memory.spawning;
-  }
-}
-
-export default function() {
-  cleanUpSpawning();
-  doNextSpawn();
 }

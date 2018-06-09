@@ -1,5 +1,5 @@
-import { countCreepsAliveOrEnqueued, getSpawn } from "../util/spawn";
-import { enqueue } from "./spawnQueue";
+import { countCreeps, getSpawn } from "../util/spawn";
+import { trySpawnThisTick } from "./spawnQueue";
 
 declare global {
   interface Memory {
@@ -11,7 +11,7 @@ function cleanUpDeadCreeps() {
   _.keys(Memory.harvestersBySource).forEach(sourceId => {
     const name = _.get(Memory, `harvestersBySource[${sourceId}]`) as string;
     if (Memory.harvestersBySource) {
-      const harvesterCount = countCreepsAliveOrEnqueued({
+      const harvesterCount = countCreeps({
         nameFilter: n => n === name
       });
       if (!harvesterCount) {
@@ -31,9 +31,9 @@ function spawnIfNeeded() {
     .find(source => !_.has(Memory, `harvestersBySource[${source.id}]`));
   if (sourceNeedsCreep) {
     const name = `Harvester${Game.time}`;
-    enqueue({
+    trySpawnThisTick({
       body: [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE],
-      memory: { nonBalanced: true },
+      memory: { role: "harvester" },
       name
     });
     _.set(Memory, `harvestersBySource[${sourceNeedsCreep.id}]`, name);
@@ -50,7 +50,10 @@ function doHarvesting() {
         if (creep.harvest(sourceObj) === ERR_NOT_IN_RANGE) {
           creep.moveTo(sourceObj);
         }
-      } else if (_.size(Game.creeps) === 1) {
+      } else if (
+        !Memory.moversByHarvester ||
+        !!Memory.moversByHarvester[creep.name]
+      ) {
         const spawn = getSpawn();
         if (spawn) {
           if (creep.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {

@@ -3,8 +3,11 @@ import { LoDashStatic } from "lodash";
 declare global {
   interface CreepMemory {
     role?: string;
-    nonBalanced?: boolean;
+    generic?: boolean;
     reloading?: boolean;
     target?: string;
+  }
+  interface Game {
+    cache: { [key: string]: any };
   }
 }

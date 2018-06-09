@@ -1,5 +1,5 @@
-import { countCreepsAliveOrEnqueued, getSpawn } from "../util/spawn";
-import { enqueue } from "./spawnQueue";
+import { countCreeps, getSpawn } from "../util/spawn";
+import { trySpawnThisTick } from "./spawnQueue";
 
 declare global {
   interface Memory {
@@ -18,7 +18,7 @@ function cleanUpDeadCreeps(spawn: StructureSpawn) {
   _.keys(Memory.moversByHarvester).forEach(harvester => {
     const mover = _.get(Memory, `moversByHarvester[${harvester}]`) as string;
     if (Memory.moversByHarvester) {
-      const moverCount = countCreepsAliveOrEnqueued({
+      const moverCount = countCreeps({
         nameFilter: n => n === mover
       });
       if (!moverCount) {
@@ -30,7 +30,7 @@ function cleanUpDeadCreeps(spawn: StructureSpawn) {
 
 function discoverOrphans() {
   _.keys(Memory.moversByHarvester).forEach(harvester => {
-    const harvesterCount = countCreepsAliveOrEnqueued({
+    const harvesterCount = countCreeps({
       nameFilter: n => n === harvester
     });
     if (Memory.moversByHarvester && !harvesterCount) {
@@ -53,9 +53,9 @@ function spawnOrLinkIfNeeded(spawn: StructureSpawn) {
         _.set(Memory, `moversByHarvester[${harvester}]`, name);
       } else {
         const name = `Mover${Game.time}`;
-        enqueue({
+        trySpawnThisTick({
           body: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE],
-          memory: { nonBalanced: true },
+          memory: { role: "mover" },
           name
         });
         _.set(Memory, `moversByHarvester[${harvester}]`, name);

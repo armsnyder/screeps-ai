@@ -1,5 +1,5 @@
 import { allRoles, defaultRole } from "../util/roles";
-import { getSpawn } from "../util/spawn";
+import { countCreeps, getSpawn } from "../util/spawn";
 
 function getBuilderPressure() {
   const constructionSiteCount = _.size(Game.constructionSites);
@@ -76,13 +76,15 @@ function getBalanceAnalysis(): BalanceAnalysis {
     roles[role] = { pressure };
     totalPressure += pressure;
   });
-  const creepsCount = _.size(Game.creeps);
+  const creepsCount = countCreeps({ memoryFilter: m => m && m.generic });
   let mostNeededCreeps = 1;
   let neededRoles = [] as string[];
   let mostOverLimitCreeps = 1;
   let overLimitRoles = [] as string[];
   _.keys(roles).forEach(role => {
-    const creepsOfRole = _.filter(Game.creeps, { memory: { role } }).length;
+    const creepsOfRole = _.filter(Game.creeps, {
+      memory: { role, generic: true }
+    }).length;
     const desiredCreepsOfRole =
       roles[role].pressure / totalPressure * creepsCount;
     const minCreepsOfRole = Math.floor(desiredCreepsOfRole);
@@ -147,7 +149,7 @@ function balanceExistingCreeps() {
     const nextRole = _.sample(balanceAnalysis.neededRoles);
     const roleToConvert = findLeastNeededRole(balanceAnalysis);
     const creepToConvert = _.sample(
-      _.filter(Game.creeps, { memory: { role: roleToConvert } })
+      _.filter(Game.creeps, { memory: { role: roleToConvert, generic: true } })
     );
     if (creepToConvert) {
       creepToConvert.memory.role = nextRole;
@@ -156,7 +158,7 @@ function balanceExistingCreeps() {
     const roleToConvert = _.sample(balanceAnalysis.overLimitRoles);
     const nextRole = findLeastUnNeededRole(balanceAnalysis);
     const creepToConvert = _.sample(
-      _.filter(Game.creeps, { memory: { role: roleToConvert } })
+      _.filter(Game.creeps, { memory: { role: roleToConvert, generic: true } })
     );
     if (creepToConvert && nextRole) {
       creepToConvert.memory.role = nextRole;
@@ -183,7 +185,7 @@ export default function run() {
   initializeMemory();
   const unassignedCreep = _.find(
     _.values(Game.creeps) as Creep[],
-    creep => !creep.memory.role && !creep.memory.nonBalanced
+    creep => !creep.memory.role && creep.memory.generic
   );
   if (unassignedCreep) {
     findRoleFor(unassignedCreep);
