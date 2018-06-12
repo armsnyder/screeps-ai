@@ -3,3 +3,9 @@ extends:
   - tslint-config-prettier
 rules:
   interface-name: false
+  variable-name:
+    options:
+      - ban-keywords
+      - check-format
+      - allow-pascal-case
+      - allow-leading-underscore

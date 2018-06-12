@@ -1,15 +1,19 @@
-import serviceCreepColorizer from "./service/creepColorizer";
-import serviceCreepRunner from "./service/creepRunner";
-import serviceRoleBalancer from "./service/genericWorkerBalancer";
-import serviceGenericWorkerSpawner from "./service/genericWorkerSpawner";
-import serviceHarvesters from "./service/harvesters";
-import serviceMovers from "./service/movers";
-import serviceRoadSpawner from "./service/roadSpawner";
-import * as serviceSpawnQueue from "./service/spawnQueue";
-import serviceTowers from "./service/towers";
+import FuelTransportMission from "./missions/FuelTransportMission";
+import HarvestMission from "./missions/HarvestMission";
+import MissionContext from "./missions/MissionContext";
+import RoomCache from "./missions/RoomCache";
+import Spawner from "./missions/Spawner";
+import SpawnRequest from "./missions/SpawnRequest";
+import UpgradeControllerMission from "./missions/UpgradeControllerMission";
+
+declare global {
+  interface Memory {
+    missions: { [id: string]: any };
+  }
+}
 
 function cleanMemory() {
-  for (const name in Memory.creeps) {
+  for (const name of _.keys(Memory.creeps)) {
     if (!Game.creeps[name]) {
       delete Memory.creeps[name];
     }
@@ -17,20 +21,14 @@ function cleanMemory() {
 }
 
 export function loop() {
-  Game.cache = {};
-  serviceSpawnQueue.init();
   cleanMemory();
-
-  serviceHarvesters();
-  serviceMovers();
-  serviceGenericWorkerSpawner();
-
-  serviceCreepRunner();
-  serviceCreepColorizer();
-  serviceCreepRunner();
-  serviceRoleBalancer();
-  serviceRoadSpawner();
-  serviceTowers();
-
-  serviceSpawnQueue.doNextSpawn();
+  _.merge(Memory, { missions: {} });
+  const missionContext = new MissionContext();
+  missionContext.add(context => new HarvestMission(context, "harvest"));
+  missionContext.add(context => new FuelTransportMission(context, "transport"));
+  missionContext.add(
+    context => new UpgradeControllerMission(context, "upgrade")
+  );
+  missionContext.run();
+  new Spawner(missionContext).spawnNext();
 }

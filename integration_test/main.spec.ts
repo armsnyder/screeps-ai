@@ -59,8 +59,8 @@ describe("integration tests", () => {
     return size(filter(objects, { type: "creep" }));
   }
 
-  function getControllerLevel(objects: DBRoomObject[] = roomObjects) {
-    return get(find(objects, { type: "controller", name }), "level");
+  function getControllerProgress(objects: DBRoomObject[] = roomObjects) {
+    return get(find(objects, { type: "controller" }), "progress");
   }
 
   function getIsCreepNextToSource(
@@ -138,7 +138,7 @@ describe("integration tests", () => {
     const getFirstCreepEnergy = (objects: DBRoomObject[]) =>
       getCreepEnergy(firstCreepName || "", objects);
     let energyWasHarvested = false;
-    const ticksTimeout = 15;
+    const ticksTimeout = 30;
     for (let i = 0; i < ticksTimeout; i++) {
       await tick();
       if (!firstCreepName) {
@@ -170,7 +170,7 @@ describe("integration tests", () => {
 
   it("should deposit energy to spawn", async () => {
     let energyWasDeposited = false;
-    const ticksTimeout = 20;
+    const ticksTimeout = 60;
     for (let i = 0; i < ticksTimeout; i++) {
       await tick();
       const spawnEnergy = getDelta(getSpawnEnergy);
@@ -184,7 +184,7 @@ describe("integration tests", () => {
 
   it("should separate harvester and depositor", async () => {
     let energyWasDepositedByNonHarvester = false;
-    const ticksTimeout = 20;
+    const ticksTimeout = 100;
     for (let i = 0; i < ticksTimeout; i++) {
       await tick();
       const spawnEnergy = getDelta(getSpawnEnergy);
@@ -211,11 +211,11 @@ describe("integration tests", () => {
 
   it("should upgrade controller", async () => {
     let controllerWasUpgraded = false;
-    const ticksTimeout = 500;
+    const ticksTimeout = 300;
     for (let i = 0; i < ticksTimeout; i++) {
       await tick();
-      const controllerLevel = getControllerLevel();
-      if (controllerLevel > 1) {
+      const controllerEnergy = getDelta(getControllerProgress);
+      if (controllerEnergy[1] > controllerEnergy[0]) {
         controllerWasUpgraded = true;
         break;
       }

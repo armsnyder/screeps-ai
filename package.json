@@ -10,7 +10,8 @@
     "deploy": "source .env && grunt screeps",
     "precommit": "npm run prettier && npm run tslint",
     "test": "jest src",
-    "integration_test": "jest integration_test"
+    "integration_test": "jest integration_test",
+    "build_and_deploy": "npm run build && npm run deploy"
   },
   "devDependencies": {
     "@types/fs-extra-promise": "^1.0.5",
