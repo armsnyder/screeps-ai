@@ -11,8 +11,6 @@ interface State {
 }
 
 export default class FuelTransportMission extends Mission<State> {
-  public readonly name = "fuelTransport";
-
   public get spawnRequest() {
     const { spawn } = this.roomCache;
     if (!spawn) {

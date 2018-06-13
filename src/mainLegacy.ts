@@ -17,7 +17,6 @@ function cleanMemory() {
 }
 
 export function loop() {
-  Game.cache = {};
   serviceSpawnQueue.init();
   cleanMemory();
 

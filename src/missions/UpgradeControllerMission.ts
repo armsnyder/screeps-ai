@@ -9,8 +9,6 @@ interface State {
 }
 
 export default class UpgradeControllerMission extends Mission<State> {
-  public readonly name = "upgradeController";
-
   public get spawnRequest() {
     if (
       !this.hasEnoughEnergyToDoUpgrades ||

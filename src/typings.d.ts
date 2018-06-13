@@ -7,7 +7,4 @@ declare global {
     reloading?: boolean;
     target?: string;
   }
-  interface Game {
-    cache: { [key: string]: any };
-  }
 }
