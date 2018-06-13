@@ -13,13 +13,26 @@ interface State {
 
 export default class HarvestMission extends Mission<State> {
   public get spawnRequest() {
-    const sources = this.roomCache.safeSources;
-    const needed = sources.length - _.size(this.state.sourcesByCreep);
+    const { safeSources, spawn } = this.roomCache;
+    if (!spawn) {
+      return SpawnRequest.NONE;
+    }
+    const needed = safeSources.length - _.size(this.state.sourcesByCreep);
     if (needed === 0) {
       return SpawnRequest.NONE;
     }
+    const assignedSources = new Set(_.values(
+      this.state.sourcesByCreep
+    ) as string[]);
+    const sourceNeedingAssignment = spawn.pos.findClosestByPath(safeSources, {
+      filter: (source: Source) => !assignedSources.has(source.id),
+      ignoreCreeps: true
+    });
+    if (!sourceNeedingAssignment) {
+      return SpawnRequest.NONE;
+    }
     let priority;
-    if (needed === sources.length) {
+    if (needed === safeSources.length) {
       priority = 1;
     } else {
       priority = 5;
@@ -34,7 +47,9 @@ export default class HarvestMission extends Mission<State> {
     return new SpawnRequest(
       "Harvester",
       priority,
-      this.onSpawn.bind(this),
+      ((name: string) => this.onSpawn(name, sourceNeedingAssignment.id)).bind(
+        this
+      ),
       desiredBodies
     );
   }
@@ -99,19 +114,8 @@ export default class HarvestMission extends Mission<State> {
     delete this.state.boredom[creep];
   }
 
-  private onSpawn(creepName: string) {
-    const { safeSources, spawn } = this.roomCache;
-    if (spawn) {
-      const assignedSources = new Set(_.values(
-        this.state.sourcesByCreep
-      ) as string[]);
-      const sourceNeedingAssignment = spawn.pos.findClosestByPath(safeSources, {
-        filter: (source: Source) => !assignedSources.has(source.id)
-      });
-      if (sourceNeedingAssignment) {
-        this.state.sourcesByCreep[creepName] = sourceNeedingAssignment.id;
-        this.state.creepsBySource[sourceNeedingAssignment.id] = creepName;
-      }
-    }
+  private onSpawn(creepName: string, sourceId: string) {
+    this.state.sourcesByCreep[creepName] = sourceId;
+    this.state.creepsBySource[sourceId] = creepName;
   }
 }
