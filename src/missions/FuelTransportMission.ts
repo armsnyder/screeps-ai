@@ -30,7 +30,12 @@ export default class FuelTransportMission extends Mission<State> {
     if (!sourcesNeedingTransport.length) {
       return SpawnRequest.NONE;
     }
-    const targetSource = spawn.pos.findClosestByPath(sourcesNeedingTransport);
+    const targetSource = spawn.pos.findClosestByPath(sourcesNeedingTransport, {
+      ignoreCreeps: true
+    });
+    if (!targetSource) {
+      return SpawnRequest.NONE;
+    }
     const priority = _.size(this.state.transportersBySource) ? 8 : 3;
     return new SpawnRequest(
       "Transporter",
